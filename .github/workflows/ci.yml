@@ -1,0 +1,68 @@
+name: ci
+on:
+  workflow_call:
+    inputs:
+      project:   { type: string,  default: roboshop }
+      component: { type: string,  required: true }
+      language:  { type: string,  required: true }
+      deploy:    { type: boolean, default: false }
+    secrets:
+      GITOPS_TOKEN: { required: false }
+
+jobs:
+  ci:
+    runs-on: self-hosted 
+    timeout-minutes: 30
+    concurrency: ${{ inputs.component }}-ci
+    env:
+      PROJECT: ${{ inputs.project }}
+      COMPONENT: ${{ inputs.component }}
+      # --- Floci instead of a real AWS account ---
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localhost:4566
+      REGISTRY: 000000000000.dkr.ecr.us-east-1.localhost:5100   # = your Floci ECR host (was ${ACC_ID}.dkr.ecr...amazonaws.com)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read Version
+        id: ver
+        run: |
+          case "${{ inputs.language }}" in
+            node)   appVersion=$(jq -r .version package.json) ;;
+            java)   appVersion=$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout) ;;
+            go)     appVersion="1.0.0" ;;
+            python) appVersion=$(cut -d= -f2 version.txt | tr -d '[:space:]') ;;
+          esac
+          echo "Version is: $appVersion"
+          echo "appVersion=$appVersion" >> "$GITHUB_OUTPUT"
+
+      - name: install Dependencies
+        run: |
+          case "${{ inputs.language }}" in
+            node)   npm install ;;
+            java)   mvn clean package ;;
+            go)     go mod tidy ;;
+            python) pip install -r requirements.txt ;;
+          esac
+
+      - name: Unit test
+        run: echo "Unit tests are created by developers, we will configure the command like npm test"
+
+      - name: Docker build
+        run: |
+          aws ecr get-login-password --endpoint-url $AWS_ENDPOINT_URL | docker login --username AWS --password-stdin $REGISTRY
+          docker build -t $REGISTRY/$PROJECT/$COMPONENT:${{ steps.ver.outputs.appVersion }} .
+          docker push  $REGISTRY/$PROJECT/$COMPONENT:${{ steps.ver.outputs.appVersion }}
+
+      - name: Trigger deploy
+        if: ${{ inputs.deploy }}
+        run: |
+          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/BunnyDevOpsPractice/roboshop-gitops.git gitops
+          cd gitops
+          yq -i '.deployment.imageVersion = "${{ steps.ver.outputs.appVersion }}"' charts/${COMPONENT}-deploy/helm/values.yaml
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git commit -am "deploy ${COMPONENT} -> ${{ steps.ver.outputs.appVersion }}"
+          git push
