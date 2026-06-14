@@ -22,7 +22,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: test
       AWS_REGION: us-east-1
       AWS_ENDPOINT_URL: http://localhost:4566
-      REGISTRY: 000000000000.dkr.ecr.us-east-1.localhost:5000   # = your Floci ECR host (was ${ACC_ID}.dkr.ecr...amazonaws.com)
+      REGISTRY: 000000000000.dkr.ecr.us-east-1.localhost:5100   # = your Floci ECR host (was ${ACC_ID}.dkr.ecr...amazonaws.com)
     steps:
       - uses: actions/checkout@v4
 
