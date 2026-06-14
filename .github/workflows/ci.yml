@@ -59,7 +59,7 @@ jobs:
       - name: Trigger deploy
         if: ${{ inputs.deploy }}
         run: |
-          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/bunnyrdy/roboshop-gitops.git gitops
+          git clone https://x-access-token:${{ secrets.GITOPS_TOKEN }}@github.com/BunnyDevOpsPractice/roboshop-gitops.git gitops
           cd gitops
           yq -i '.deployment.imageVersion = "${{ steps.ver.outputs.appVersion }}"' charts/${COMPONENT}-deploy/helm/values.yaml
           git config user.name "ci-bot"
