@@ -31,7 +31,7 @@ jobs:
         run: |
           case "${{ inputs.language }}" in
             node)   appVersion=$(jq -r .version package.json) ;;
-            java)   appVersion=$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout) ;;
+            java)   appVersion=appVersion=1.0.0 ;;
             go)     appVersion="1.0.0" ;;
             python) appVersion=$(cut -d= -f2 version.txt | tr -d '[:space:]') ;;
           esac
