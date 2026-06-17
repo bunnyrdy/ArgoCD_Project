@@ -53,8 +53,8 @@ jobs:
       - name: Docker build
         run: |
           aws ecr get-login-password --endpoint-url $AWS_ENDPOINT_URL | docker login --username AWS --password-stdin $REGISTRY
-          docker build -t $REGISTRY/$PROJECT/$COMPONENT:${{ steps.ver.outputs.appVersion }} .
-          docker push  $REGISTRY/$PROJECT/$COMPONENT:${{ steps.ver.outputs.appVersion }}
+          docker build -t $REGISTRY/$PROJECT/$COMPONENT:1.0.0 .
+          docker push  $REGISTRY/$PROJECT/$COMPONENT:1.0.0
 
       - name: Trigger deploy
         if: ${{ inputs.deploy }}
